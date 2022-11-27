@@ -17,12 +17,21 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
     try{
         const productsCollection = client.db('vintageBooks').collection('products');
+        const bookedCollection = client.db('vintageBooks').collection('booked');
 
         app.get('/products', async(req, res) =>{
             const query = {};
             const products = await productsCollection.find(query).toArray();
             res.send(products);
+        });
+
+        app.post('/booked', async(req, res) => {
+            const booked = req.body
+            console.log(booked);
+            const result = await bookedCollection.insertOne(booked);
+            res.send(result);
         })
+
     }
     finally{
 
