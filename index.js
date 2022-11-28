@@ -43,6 +43,12 @@ async function run(){
             const products = await productsCollection.find(query).toArray();
             res.send(products);
         });
+        app.get('/advertise', async(req, res) => {
+            const query = {}
+            const cursor = productsCollection.find(query);
+            const services = await cursor.limit(2).toArray();
+            res.send(services.reverse());
+        })
 
         app.get('/booked', verifyJWT, async(req, res) => {
             const email = req.query.email;
@@ -67,7 +73,7 @@ async function run(){
             const query = {email: email};
             const user = await usersCollection.findOne(query);
             if(user){
-                const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn: '3h'})
+                const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn: '1h'})
                 return res.send({accessToken: token})
             }
             console.log(user)
@@ -78,7 +84,7 @@ async function run(){
             const query = {};
             const users = await usersCollection.find(query).toArray();
             res.send(users);
-        })
+        });
 
         app.post('/users', async(req, res) => {
             const user = req.body;
@@ -86,7 +92,15 @@ async function run(){
             res.send(result);
         })
 
-        app.put('/users/admin/:id', async(req, res) => {
+        app.put('/users/admin/:id', verifyJWT, async(req, res) => {
+            const decodedEmail = req.decoded.email;
+            const query = {email: decodedEmail};
+            const user = await usersCollection.findOne(query);
+
+            if(user?.role !== 'admin'){
+                return res.status(403).send({message: 'forbidden access'})
+            }
+
             const id = req.params.id;
             const filter = { _id: ObjectId(id)}
             const options = {upsert: true};
@@ -95,7 +109,7 @@ async function run(){
                     role: 'admin'
                 }
             }
-            const result = await usersCollection.updateOne(filter, updateOne, options);
+            const result = await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
         })
 
